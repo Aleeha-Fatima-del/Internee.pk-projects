@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Churn Prediction System</title>
+<style>
+  :root{
+    --bg:#0b1220;
+    --panel:#111a2e;
+    --panel-2:#0f1729;
+    --border:#22304d;
+    --text:#e7ecf7;
+    --text-dim:#93a1c2;
+    --accent:#2dd4bf;
+    --accent-dim:#134e4a;
+    --amber:#f5a524;
+    --red:#f5484a;
+    --green:#34d399;
+    --mono:'JetBrains Mono','SFMono-Regular',Consolas,monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:radial-gradient(1200px 600px at 10% -10%, #14213d 0%, var(--bg) 55%);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    min-height:100vh;
+  }
+  .shell{max-width:1080px;margin:0 auto;padding:32px 20px 80px;}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#0ea5a0);display:flex;align-items:center;justify-content:center;font-weight:700;color:#04211d;font-size:16px;}
+  .brand h1{font-size:18px;margin:0;letter-spacing:.2px;}
+  .brand p{margin:2px 0 0;font-size:12.5px;color:var(--text-dim);}
+  .model-badge{font-family:var(--mono);font-size:12px;background:var(--panel);border:1px solid var(--border);padding:7px 12px;border-radius:8px;color:var(--accent);}
+
+  .tabs{display:flex;gap:6px;border-bottom:1px solid var(--border);margin-bottom:24px;}
+  .tab{padding:10px 16px;font-size:13.5px;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;user-select:none;}
+  .tab.active{color:var(--text);border-bottom-color:var(--accent);}
+  .tab:hover{color:var(--text);}
+
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:18px;}
+  .panel h2{font-size:14px;margin:0 0 4px;color:var(--text);}
+  .panel .sub{font-size:12.5px;color:var(--text-dim);margin:0 0 18px;}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;}
+  .field label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:6px;}
+  .field input, .field select{
+    width:100%;background:var(--panel-2);border:1px solid var(--border);color:var(--text);
+    padding:9px 10px;border-radius:8px;font-size:13.5px;font-family:var(--mono);
+  }
+  .field input:focus, .field select:focus{outline:none;border-color:var(--accent);}
+
+  .btn{
+    background:var(--accent);color:#04211d;border:none;padding:10px 18px;border-radius:8px;
+    font-size:13.5px;font-weight:600;cursor:pointer;
+  }
+  .btn:hover{filter:brightness(1.08);}
+  .btn.secondary{background:transparent;border:1px solid var(--border);color:var(--text);}
+  .btn.secondary:hover{border-color:var(--accent);color:var(--accent);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .row-actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;align-items:center;}
+
+  .result-card{margin-top:20px;padding:20px;border-radius:12px;border:1px solid var(--border);background:var(--panel-2);display:none;}
+  .result-card.show{display:block;}
+  .risk-row{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+  .risk-prob{font-family:var(--mono);font-size:32px;font-weight:700;}
+  .risk-chip{font-size:12px;padding:5px 12px;border-radius:999px;font-weight:600;letter-spacing:.3px;}
+  .risk-chip.High{background:rgba(245,72,74,.15);color:var(--red);border:1px solid rgba(245,72,74,.4);}
+  .risk-chip.Medium{background:rgba(245,165,36,.15);color:var(--amber);border:1px solid rgba(245,165,36,.4);}
+  .risk-chip.Low{background:rgba(52,211,153,.15);color:var(--green);border:1px solid rgba(52,211,153,.4);}
+  .bar-bg{height:8px;border-radius:999px;background:#1b263f;flex:1;min-width:160px;overflow:hidden;}
+  .bar-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--amber),var(--red));}
+
+  .metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-top:14px;}
+  .metric{background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;}
+  .metric .v{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent);}
+  .metric .l{font-size:10.5px;color:var(--text-dim);margin-top:3px;text-transform:uppercase;letter-spacing:.4px;}
+
+  .dropzone{
+    border:1.5px dashed var(--border);border-radius:12px;padding:26px;text-align:center;cursor:pointer;
+    color:var(--text-dim);font-size:13px;transition:.15s;
+  }
+  .dropzone:hover, .dropzone.drag{border-color:var(--accent);color:var(--accent);}
+  .dropzone input{display:none;}
+  .file-name{font-family:var(--mono);font-size:12px;color:var(--accent);margin-top:10px;}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:16px;}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+  th{color:var(--text-dim);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.3px;}
+  td{font-family:var(--mono);}
+  .table-wrap{overflow-x:auto;max-height:420px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;}
+
+  .msg{font-size:12.5px;padding:10px 14px;border-radius:8px;margin-top:14px;display:none;}
+  .msg.show{display:block;}
+  .msg.error{background:rgba(245,72,74,.1);color:var(--red);border:1px solid rgba(245,72,74,.3);}
+  .msg.ok{background:rgba(52,211,153,.1);color:var(--green);border:1px solid rgba(52,211,153,.3);}
+
+  .pill-select{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .pill{padding:7px 14px;border-radius:999px;border:1px solid var(--border);font-size:12.5px;cursor:pointer;color:var(--text-dim);}
+  .pill.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
+
+  .hint{font-size:11.5px;color:var(--text-dim);margin-top:8px;}
+  .footer-note{font-size:11.5px;color:var(--text-dim);text-align:center;margin-top:30px;}
+  .spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.25);border-top-color:#04211d;border-radius:50%;display:inline-block;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mark">CP</div>
+      <div>
+        <h1>Churn Prediction System</h1>
+        <p>Login frequency &amp; engagement-based churn risk scoring</p>
+      </div>
+    </div>
+    <div class="model-badge" id="activeModelBadge">Model: LMS Engagement (built-in)</div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="predict">Predict</div>
+    <div class="tab" data-tab="bulk">Bulk Predict</div>
+    <div class="tab" data-tab="train">Train on New Data</div>
+  </div>
+
+  <!-- PREDICT TAB -->
+  <section id="tab-predict">
+    <div class="panel">
+      <h2>Single User Prediction</h2>
+      <p class="sub">Model in use: <span id="predictModelName">LMS Engagement Model</span></p>
+      <div class="grid" id="predictForm"></div>
+      <div class="row-actions">
+        <button class="btn" id="predictBtn">Predict Churn Risk</button>
+        <button class="btn secondary" id="fillSampleBtn">Fill Sample Values</button>
+      </div>
+      <div class="result-card" id="predictResult">
+        <div class="risk-row">
+          <div>
+            <div class="risk-prob" id="probValue">0%</div>
+            <div class="hint">Churn probability</div>
+          </div>
+          <span class="risk-chip" id="riskChip">Low</span>
+          <div class="bar-bg"><div class="bar-fill" id="barFill" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BULK PREDICT TAB -->
+  <section id="tab-bulk" style="display:none;">
+    <div class="panel">
+      <h2>Bulk Prediction from CSV</h2>
+      <p class="sub">Upload a CSV containing the active model's required columns. Missing columns are imputed automatically.</p>
+      <div class="dropzone" id="bulkDrop">
+        <div>Click to select or drop a CSV file</div>
+        <input type="file" id="bulkFile" accept=".csv">
+        <div class="file-name" id="bulkFileName"></div>
+      </div>
+      <div class="row-actions">
+        <button class="btn" id="bulkPredictBtn">Run Bulk Prediction</button>
+        <button class="btn secondary" id="bulkDownloadBtn" style="display:none;">Download Results CSV</button>
+      </div>
+      <div class="msg" id="bulkMsg"></div>
+      <div id="bulkSummary" class="metrics-grid" style="display:none;"></div>
+      <div class="table-wrap" id="bulkTableWrap" style="display:none;margin-top:16px;"></div>
+    </div>
+  </section>
+
+  <!-- TRAIN TAB -->
+  <section id="tab-train" style="display:none;">
+    <div class="panel">
+      <h2>Train a Model on a New Data Source</h2>
+      <p class="sub">Upload any labeled CSV (any domain). The system auto-detects categorical vs. numeric columns, trains a logistic regression churn model in-browser, and activates it for prediction &mdash; no server required.</p>
+      <div class="dropzone" id="trainDrop">
+        <div>Click to select or drop a CSV file</div>
+        <input type="file" id="trainFile" accept=".csv">
+        <div class="file-name" id="trainFileName"></div>
+      </div>
+
+      <div id="trainConfig" style="display:none;margin-top:18px;">
+        <div class="grid">
+          <div class="field">
+            <label>Target / churn column</label>
+            <select id="targetColSelect"></select>
+          </div>
+          <div class="field">
+            <label>Model label</label>
+            <input type="text" id="modelLabelInput" placeholder="e.g. SaaS Subscriber Model">
+          </div>
+        </div>
+        <div class="row-actions">
+          <button class="btn" id="trainBtn">Train Model</button>
+        </div>
+      </div>
+
+      <div class="msg" id="trainMsg"></div>
+      <div class="metrics-grid" id="trainMetrics" style="display:none;"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Registered Models</h2>
+      <p class="sub">Switch the active model used on the Predict and Bulk Predict tabs.</p>
+      <div class="pill-select" id="modelRegistry"></div>
+    </div>
+  </section>
+
+  <div class="footer-note">Random Forest / Gradient Boosting trained offline on the built-in datasets &middot; new datasets trained client-side via logistic regression &middot; entirely self-contained, no backend required.</div>
+</div>
+
+<script>
+/* =========================================================================
+   BUILT-IN MODEL: LMS Engagement Model
+   Logistic Regression trained offline on lms_user_activity.csv
+   (6000 rows, ROC-AUC 0.755, class-balanced)
+   ========================================================================= */
+const BUILTIN_LMS_MODEL = {
+  key: "lms",
+  label: "LMS Engagement Model (built-in)",
+  type: "numeric_only",
+  features: ["tenure_days","logins_last_30d","avg_session_duration_min","days_since_last_login",
+    "courses_enrolled","course_completion_rate","assignments_submitted_pct","quiz_avg_score",
+    "video_watch_hours_30d","forum_posts_30d","support_tickets_raised","late_submissions_pct",
+    "peer_interactions_30d","mobile_app_usage_pct","certificate_earned"],
+  labels: {
+    tenure_days:"Tenure (days)", logins_last_30d:"Logins (last 30 days)",
+    avg_session_duration_min:"Avg. session duration (min)", days_since_last_login:"Days since last login",
+    courses_enrolled:"Courses enrolled", course_completion_rate:"Course completion rate (0-1)",
+    assignments_submitted_pct:"Assignments submitted (0-1)", quiz_avg_score:"Quiz avg. score (0-100)",
+    video_watch_hours_30d:"Video watch hours (30d)", forum_posts_30d:"Forum posts (30d)",
+    support_tickets_raised:"Support tickets raised", late_submissions_pct:"Late submissions (0-1)",
+    peer_interactions_30d:"Peer interactions (30d)", mobile_app_usage_pct:"Mobile app usage (0-1)",
+    certificate_earned:"Certificate earned (0/1)"
+  },
+  mean: [459.85233,8.00383,17.98305,9.4025,4.0125,0.49413,0.54547,69.86465,5.1547,1.54333,0.39633,0.26885,3.0115,0.49842,0.35167],
+  scale:[255.74645,2.79902,13.02509,9.69109,2.00466,0.22211,0.22598,14.75684,4.17272,1.25265,0.62337,0.17209,1.72183,0.22423,0.47749],
+  coef: [-0.830301,-0.095868,-0.355908,0.16625,-0.009967,-0.47134,-0.334005,-0.219941,-0.264541,-0.188531,0.200829,0.267831,-0.091555,-0.009927,-0.351715],
+  intercept: -0.360186,
+  categorical: [],
+  sample: {tenure_days:45, logins_last_30d:1, avg_session_duration_min:3.2, days_since_last_login:38,
+    courses_enrolled:3, course_completion_rate:0.12, assignments_submitted_pct:0.18, quiz_avg_score:42,
+    video_watch_hours_30d:0.8, forum_posts_30d:0, support_tickets_raised:2, late_submissions_pct:0.75,
+    peer_interactions_30d:0, mobile_app_usage_pct:0.15, certificate_earned:0},
+  metrics: {accuracy:0.6742, precision:0.3708, recall:0.6667, f1:0.4766, roc_auc:0.755}
+};
+
+// Registry of all models available in this session (built-in + user-trained)
+const registry = { active: "lms", models: { lms: BUILTIN_LMS_MODEL } };
+
+/* =========================================================================
+   Tabs
+   ========================================================================= */
+document.querySelectorAll(".tab").forEach(t=>{
+  t.addEventListener("click", ()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");
+    ["predict","bulk","train"].forEach(id=>{
+      document.getElementById("tab-"+id).style.display = (id===t.dataset.tab) ? "block" : "none";
+    });
+  });
+});
+
+/* =========================================================================
+   Generic CSV parsing (handles quoted fields)
+   ========================================================================= */
+function parseCSV(text){
+  const rows = [];
+  let row = [], field = "", inQuotes = false;
+  for (let i=0;i<text.length;i++){
+    const c = text[i];
+    if (inQuotes){
+      if (c === '"'){
+        if (text[i+1] === '"'){ field += '"'; i++; } else { inQuotes = false; }
+      } else field += c;
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ','){ row.push(field); field=""; }
+      else if (c === '\n'){ row.push(field); rows.push(row); row=[]; field=""; }
+      else if (c === '\r'){ /* skip */ }
+      else field += c;
+    }
+  }
+  if (field.length || row.length){ row.push(field); rows.push(row); }
+  if (!rows.length) return {headers:[], data:[]};
+  const headers = rows[0].map(h=>h.trim());
+  const data = rows.slice(1).filter(r=>r.length===headers.length && r.some(v=>v!=="")).map(r=>{
+    const obj = {};
+    headers.forEach((h,idx)=>obj[h]=r[idx]);
+    return obj;
+  });
+  return {headers, data};
+}
+
+function toCSV(rows, headers){
+  const esc = v => {
+    v = (v===null||v===undefined) ? "" : String(v);
+    return /[",\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v;
+  };
+  const lines = [headers.map(esc).join(",")];
+  rows.forEach(r=>lines.push(headers.map(h=>esc(r[h])).join(",")));
+  return lines.join("\n");
+}
+
+function downloadBlob(content, filename, mime){
+  const blob = new Blob([content], {type:mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* =========================================================================
+   Predict tab: dynamic form rendering + inference
+   ========================================================================= */
+function sigmoid(z){ return 1/(1+Math.exp(-z)); }
+
+function computeProbability(model, valuesByFeature){
+  let z = model.intercept;
+  // numeric features
+  model.features.forEach((f,idx)=>{
+    if (model.categorical.some(c=>c.name===f)) return; // handled below
+    const raw = parseFloat(valuesByFeature[f]);
+    const val = isNaN(raw) ? model.mean[idx] : raw;
+    const std = (model.mean[idx] !== undefined) ? ((val - model.mean[idx]) / (model.scale[idx] || 1)) : val;
+    z += model.coef[idx] * std;
+  });
+  // categorical one-hot features
+  if (model.categorical.length){
+    model.categorical.forEach(cat=>{
+      const chosen = valuesByFeature[cat.name];
+      cat.categories.forEach(cVal=>{
+        const oneHotKey = cat.name + "___" + cVal;
+        const w = model.catCoef[oneHotKey];
+        if (w !== undefined && chosen === cVal) z += w;
+      });
+    });
+  }
+  return sigmoid(z);
+}
+
+function renderPredictForm(model){
+  const wrap = document.getElementById("predictForm");
+  wrap.innerHTML = "";
+  document.getElementById("predictModelName").textContent = model.label;
+  document.getElementById("activeModelBadge").textContent = "Model: " + model.label;
+
+  model.features.forEach((f,idx)=>{
+    const cat = model.categorical.find(c=>c.name===f);
+    const div = document.createElement("div");
+    div.className = "field";
+    const labelText = (model.labels && model.labels[f]) ? model.labels[f] : f;
+    if (cat){
+      div.innerHTML = `<label>${labelText}</label>
+        <select data-feat="${f}">${cat.categories.map(v=>`<option value="${v}">${v}</option>`).join("")}</select>`;
+    } else {
+      const def = (model.sample && model.sample[f]!==undefined) ? model.sample[f] : (model.mean ? model.mean[idx] : 0);
+      div.innerHTML = `<label>${labelText}</label>
+        <input type="number" step="any" data-feat="${f}" value="${typeof def==='number'?Math.round(def*1000)/1000:''}">`;
+    }
+    wrap.appendChild(div);
+  });
+}
+
+function readPredictForm(){
+  const values = {};
+  document.querySelectorAll("#predictForm [data-feat]").forEach(el=>{
+    values[el.dataset.feat] = el.value;
+  });
+  return values;
+}
+
+document.getElementById("predictBtn").addEventListener("click", ()=>{
+  const model = registry.models[registry.active];
+  const values = readPredictForm();
+  const proba = computeProbability(model, values);
+  const pct = Math.round(proba*1000)/10;
+  const band = proba>=0.6 ? "High" : (proba>=0.3 ? "Medium" : "Low");
+
+  document.getElementById("probValue").textContent = pct + "%";
+  const chip = document.getElementById("riskChip");
+  chip.textContent = band + " risk";
+  chip.className = "risk-chip " + band;
+  document.getElementById("barFill").style.width = pct + "%";
+  document.getElementById("predictResult").classList.add("show");
+});
+
+document.getElementById("fillSampleBtn").addEventListener("click", ()=>{
+  const model = registry.models[registry.active];
+  if (!model.sample) return;
+  document.querySelectorAll("#predictForm [data-feat]").forEach(el=>{
+    const f = el.dataset.feat;
+    if (model.sample[f] !== undefined) el.value = model.sample[f];
+  });
+});
+
+/* =========================================================================
+   Bulk predict tab
+   ========================================================================= */
+function setupDropzone(dropId, fileId, fileNameId, onFile){
+  const drop = document.getElementById(dropId);
+  const input = document.getElementById(fileId);
+  drop.addEventListener("click", ()=>input.click());
+  drop.addEventListener("dragover", e=>{e.preventDefault(); drop.classList.add("drag");});
+  drop.addEventListener("dragleave", ()=>drop.classList.remove("drag"));
+  drop.addEventListener("drop", e=>{
+    e.preventDefault(); drop.classList.remove("drag");
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+  input.addEventListener("change", ()=>{ if (input.files[0]) handleFile(input.files[0]); });
+  function handleFile(file){
+    document.getElementById(fileNameId).textContent = file.name;
+    const reader = new FileReader();
+    reader.onload = e => onFile(e.target.result, file.name);
+    reader.readAsText(file);
+  }
+}
+
+let bulkParsed = null;
+setupDropzone("bulkDrop","bulkFile","bulkFileName", (text)=>{
+  bulkParsed = parseCSV(text);
+});
+
+document.getElementById("bulkPredictBtn").addEventListener("click", ()=>{
+  const msg = document.getElementById("bulkMsg");
+  msg.className = "msg"; msg.textContent = "";
+  if (!bulkParsed || !bulkParsed.data.length){
+    msg.textContent = "Please upload a CSV file first."; msg.classList.add("show","error"); return;
+  }
+  const model = registry.models[registry.active];
+  const results = bulkParsed.data.map(row=>{
+    const proba = computeProbability(model, row);
+    const band = proba>=0.6 ? "High" : (proba>=0.3 ? "Medium" : "Low");
+    return {...row, churn_probability: Math.round(proba*10000)/10000, churn_prediction: proba>=0.5?1:0, risk_band: band};
+  });
+
+  const churnCount = results.filter(r=>r.churn_prediction===1).length;
+  const highRisk = results.filter(r=>r.risk_band==="High").length;
+  const summaryEl = document.getElementById("bulkSummary");
+  summaryEl.style.display = "grid";
+  summaryEl.innerHTML = `
+    <div class="metric"><div class="v">${results.length}</div><div class="l">Total Users</div></div>
+    <div class="metric"><div class="v">${churnCount}</div><div class="l">Predicted Churn</div></div>
+    <div class="metric"><div class="v">${(churnCount/results.length*100).toFixed(1)}%</div><div class="l">Churn Rate</div></div>
+    <div class="metric"><div class="v">${highRisk}</div><div class="l">High Risk Users</div></div>
+  `;
+
+  const headers = [...bulkParsed.headers, "churn_probability","churn_prediction","risk_band"];
+  const tableWrap = document.getElementById("bulkTableWrap");
+  tableWrap.style.display = "block";
+  const preview = results.slice(0,50);
+  tableWrap.innerHTML = `<table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}</tr></thead>
+    <tbody>${preview.map(r=>`<tr>${headers.map(h=>`<td>${r[h]}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+
+  document.getElementById("bulkDownloadBtn").style.display = "inline-block";
+  document.getElementById("bulkDownloadBtn").onclick = ()=>{
+    downloadBlob(toCSV(results, headers), "churn_predictions.csv", "text/csv");
+  };
+
+  msg.textContent = `Prediction complete for ${results.length} rows (showing first 50 below).`;
+  msg.classList.add("show","ok");
+});
+
+/* =========================================================================
+   Train tab: in-browser logistic regression trainer (dataset-agnostic)
+   ========================================================================= */
+let trainParsed = null;
+const CHURN_LABELS = new Set(["1","yes","y","true","churned","churn","attrited customer","left","cancelled","canceled","inactive"]);
+const ID_LIKE = new Set(["id","clientnum","user_id","customer_id","student_id"]);
+
+function guessTargetColumn(headers, data){
+  const known = ["churned","churn","attrition_flag","attrition","exited","is_churn","target","label","left"];
+  const lower = headers.map(h=>h.toLowerCase());
+  for (const k of known){
+    const idx = lower.indexOf(k);
+    if (idx !== -1) return headers[idx];
+  }
+  // fallback: last column with exactly 2 unique values
+  for (let i=headers.length-1;i>=0;i--){
+    const vals = new Set(data.map(r=>r[headers[i]]));
+    if (vals.size===2) return headers[i];
+  }
+  return headers[headers.length-1];
+}
+
+setupDropzone("trainDrop","trainFile","trainFileName", (text)=>{
+  trainParsed = parseCSV(text);
+  const { headers, data } = trainParsed;
+  const sel = document.getElementById("targetColSelect");
+  sel.innerHTML = headers.map(h=>`<option value="${h}">${h}</option>`).join("");
+  sel.value = guessTargetColumn(headers, data);
+  document.getElementById("trainConfig").style.display = "block";
+  document.getElementById("modelLabelInput").value = "";
+  document.getElementById("trainMetrics").style.display = "none";
+});
+
+function normalizeTarget(v){
+  const s = String(v).trim().toLowerCase();
+  return CHURN_LABELS.has(s) ? 1 : (parseFloat(s)===1 ? 1 : 0);
+}
+
+function shuffle(arr, seed){
+  let s = seed;
+  const rnd = () => { s = (s*1103515245+12345) % 2147483648; return s/2147483648; };
+  const a = arr.slice();
+  for (let i=a.length-1;i>0;i--){ const j = Math.floor(rnd()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+function trainLogisticRegression(Xnum, y, epochs=400, lr=0.3, l2=0.002){
+  const n = Xnum.length, d = Xnum[0].length;
+  let w = new Array(d).fill(0), b = 0;
+  for (let ep=0; ep<epochs; ep++){
+    const gw = new Array(d).fill(0);
+    let gb = 0;
+    for (let i=0;i<n;i++){
+      let z = b;
+      for (let j=0;j<d;j++) z += w[j]*Xnum[i][j];
+      const p = sigmoid(z);
+      const err = p - y[i];
+      for (let j=0;j<d;j++) gw[j] += err*Xnum[i][j];
+      gb += err;
+    }
+    for (let j=0;j<d;j++) w[j] -= lr*(gw[j]/n + l2*w[j]);
+    b -= lr*(gb/n);
+  }
+  return {w,b};
+}
+
+function computeAUC(scores, labels){
+  const pairs = scores.map((s,i)=>({s, y:labels[i]})).sort((a,b)=>a.s-b.s);
+  let rank=1, rankSum=0, nPos=0, nNeg=0;
+  // average ranks for ties
+  let i=0;
+  const ranks = new Array(pairs.length);
+  while(i<pairs.length){
+    let j=i;
+    while(j+1<pairs.length && pairs[j+1].s===pairs[i].s) j++;
+    const avgRank = (i+1+j+1)/2;
+    for (let k=i;k<=j;k++) ranks[k]=avgRank;
+    i = j+1;
+  }
+  pairs.forEach((p,idx)=>{
+    if (p.y===1){ nPos++; rankSum += ranks[idx]; } else nNeg++;
+  });
+  if (nPos===0 || nNeg===0) return 0.5;
+  return (rankSum - nPos*(nPos+1)/2) / (nPos*nNeg);
+}
+
+document.getElementById("trainBtn").addEventListener("click", ()=>{
+  const msg = document.getElementById("trainMsg");
+  msg.className = "msg"; msg.textContent = "";
+  if (!trainParsed || !trainParsed.data.length){
+    msg.textContent = "Upload a CSV first."; msg.classList.add("show","error"); return;
+  }
+  const { headers, data } = trainParsed;
+  const targetCol = document.getElementById("targetColSelect").value;
+  const featureCols = headers.filter(h => h!==targetCol && !ID_LIKE.has(h.toLowerCase()) &&
+    !(h.toLowerCase().endsWith("_id")) && !(h.toLowerCase()==="id"));
+
+  // decide numeric vs categorical per feature
+  const numericCols = [], categoricalCols = [];
+  featureCols.forEach(f=>{
+    const sampleVals = data.slice(0,200).map(r=>r[f]).filter(v=>v!==undefined && v!=="");
+    const numericCount = sampleVals.filter(v=>!isNaN(parseFloat(v)) && isFinite(v)).length;
+    if (sampleVals.length && numericCount / sampleVals.length > 0.9) numericCols.push(f);
+    else categoricalCols.push(f);
+  });
+
+  // guard: drop categorical columns with too many unique values (likely free text / IDs)
+  const validCategoricalCols = categoricalCols.filter(f=>{
+    const uniq = new Set(data.map(r=>r[f]));
+    return uniq.size >= 2 && uniq.size <= 20;
+  });
+
+  if (numericCols.length + validCategoricalCols.length === 0){
+    msg.textContent = "No usable feature columns detected in this file.";
+    msg.classList.add("show","error"); return;
+  }
+
+  // numeric stats
+  const mean=[], scale=[];
+  numericCols.forEach(f=>{
+    const vals = data.map(r=>parseFloat(r[f])).filter(v=>!isNaN(v));
+    const m = vals.reduce((a,b)=>a+b,0)/(vals.length||1);
+    const variance = vals.reduce((a,b)=>a+(b-m)*(b-m),0)/(vals.length||1);
+    mean.push(m); scale.push(Math.sqrt(variance)||1);
+  });
+
+  // categorical categories
+  const catInfo = validCategoricalCols.map(f=>{
+    const cats = [...new Set(data.map(r=>String(r[f]??"").trim()).filter(v=>v!==""))].slice(0,20);
+    return {name:f, categories:cats};
+  });
+
+  // build design matrix
+  const y = data.map(r=>normalizeTarget(r[targetCol]));
+  const X = data.map(r=>{
+    const rowVec = [];
+    numericCols.forEach((f,idx)=>{
+      const raw = parseFloat(r[f]);
+      const v = isNaN(raw) ? mean[idx] : raw;
+      rowVec.push((v-mean[idx])/(scale[idx]||1));
+    });
+    catInfo.forEach(cat=>{
+      const val = String(r[cat.name]??"").trim();
+      cat.categories.forEach(cVal=> rowVec.push(val===cVal ? 1 : 0));
+    });
+    return rowVec;
+  });
+
+  // shuffle + split 80/20
+  const idxArr = shuffle([...Array(X.length).keys()], 42);
+  const splitAt = Math.floor(X.length*0.8);
+  const trainIdx = idxArr.slice(0, splitAt), testIdx = idxArr.slice(splitAt);
+  const Xtr = trainIdx.map(i=>X[i]), ytr = trainIdx.map(i=>y[i]);
+  const Xte = testIdx.map(i=>X[i]), yte = testIdx.map(i=>y[i]);
+
+  if (Xtr.length < 10 || new Set(ytr).size < 2){
+    msg.textContent = "Not enough data or class variation to train a reliable model.";
+    msg.classList.add("show","error"); return;
+  }
+
+  const {w,b} = trainLogisticRegression(Xtr, ytr, 400, 0.3, 0.002);
+
+  // evaluate
+  const scores = Xte.map(row=>{
+    let z=b; row.forEach((v,j)=>z+=w[j]*v); return sigmoid(z);
+  });
+  const preds = scores.map(s=>s>=0.5?1:0);
+  let tp=0,fp=0,tn=0,fn=0;
+  preds.forEach((p,i)=>{
+    if (p===1 && yte[i]===1) tp++;
+    else if (p===1 && yte[i]===0) fp++;
+    else if (p===0 && yte[i]===0) tn++;
+    else fn++;
+  });
+  const accuracy = (tp+tn)/(preds.length||1);
+  const precision = tp+fp ? tp/(tp+fp) : 0;
+  const recall = tp+fn ? tp/(tp+fn) : 0;
+  const f1 = precision+recall ? 2*precision*recall/(precision+recall) : 0;
+  const auc = computeAUC(scores, yte);
+
+  // build model object
+  const numFeatureCount = numericCols.length;
+  const catCoef = {};
+  let offset = numFeatureCount;
+  const catDefs = [];
+  catInfo.forEach(cat=>{
+    catDefs.push(cat);
+    cat.categories.forEach(cVal=>{
+      catCoef[cat.name+"___"+cVal] = w[offset];
+      offset++;
+    });
+  });
+
+  const modelKey = "custom_" + Object.keys(registry.models).length;
+  const label = document.getElementById("modelLabelInput").value.trim() || ("Custom Model: " + targetCol);
+  const allFeatures = [...numericCols, ...validCategoricalCols];
+  const labelsMap = {}; allFeatures.forEach(f=>labelsMap[f]=f.replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase()));
+
+  const sampleRow = {};
+  numericCols.forEach((f,idx)=>sampleRow[f]=Math.round(mean[idx]*1000)/1000);
+  catDefs.forEach(cat=>sampleRow[cat.name]=cat.categories[0]);
+
+  const model = {
+    key: modelKey, label, type:"mixed",
+    features: allFeatures, labels: labelsMap,
+    mean, scale, coef: w.slice(0, numFeatureCount), intercept: b,
+    categorical: catDefs, catCoef,
+    sample: sampleRow,
+    metrics: {accuracy:+accuracy.toFixed(4), precision:+precision.toFixed(4), recall:+recall.toFixed(4), f1:+f1.toFixed(4), roc_auc:+auc.toFixed(4)}
+  };
+
+  registry.models[modelKey] = model;
+  registry.active = modelKey;
+  renderRegistry();
+  renderPredictForm(model);
+
+  document.getElementById("trainMetrics").style.display = "grid";
+  document.getElementById("trainMetrics").innerHTML = `
+    <div class="metric"><div class="v">${(accuracy*100).toFixed(1)}%</div><div class="l">Accuracy</div></div>
+    <div class="metric"><div class="v">${(precision*100).toFixed(1)}%</div><div class="l">Precision</div></div>
+    <div class="metric"><div class="v">${(recall*100).toFixed(1)}%</div><div class="l">Recall</div></div>
+    <div class="metric"><div class="v">${(f1*100).toFixed(1)}%</div><div class="l">F1 Score</div></div>
+    <div class="metric"><div class="v">${auc.toFixed(3)}</div><div class="l">ROC-AUC</div></div>
+  `;
+  msg.textContent = `Model "${label}" trained on ${data.length} rows (${allFeatures.length} features) and activated.`;
+  msg.classList.add("show","ok");
+});
+
+/* =========================================================================
+   Model registry switcher
+   ========================================================================= */
+function renderRegistry(){
+  const wrap = document.getElementById("modelRegistry");
+  wrap.innerHTML = "";
+  Object.values(registry.models).forEach(m=>{
+    const pill = document.createElement("div");
+    pill.className = "pill" + (registry.active===m.key ? " active" : "");
+    pill.textContent = m.label + `  ·  AUC ${m.metrics.roc_auc}`;
+    pill.addEventListener("click", ()=>{
+      registry.active = m.key;
+      renderRegistry();
+      renderPredictForm(m);
+      document.getElementById("predictResult").classList.remove("show");
+    });
+    wrap.appendChild(pill);
+  });
+}
+
+/* =========================================================================
+   Init
+   ========================================================================= */
+renderPredictForm(BUILTIN_LMS_MODEL);
+renderRegistry();
+</script>
+</body>
+</html>
